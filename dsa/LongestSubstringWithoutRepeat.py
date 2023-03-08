@@ -1,16 +1,18 @@
 #Given a string s, find the length of the longest substring without repeating characters.
 
-####### ALGO #######
+"""
+******* ALGO *******
 
-# Create a Hash Set
-# Declare two iterator variables, say i & j
-# Iterate over string till i & j < len(str)
-# if set contains current character, remove character at i from set & i++
-# This will iterate till that current character is present
-# Else add character to set & j++
-# max length will be difference between two iterators & max
+Create a Hash Set
+Declare two iterator variables, say i & j
+Iterate over string till i & j < len(str)
+if set contains current character, remove character at i from set & i++
+This will iterate till that current character is present
+Else add character to set & j++
+max length will be difference between two iterators & max
 
-####### ALGO #######
+******* ALGO *******
+"""
 
 
 def longestsubstr(str):
