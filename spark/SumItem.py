@@ -58,6 +58,7 @@ class SumItem:
         resultDf = df.groupBy("name").agg(collect_list(struct("item", "sum(weight)")).alias("items"))
         return resultDf
 
+    #  Appraoch 2 to get the output
     def sumWeight2(self, df):
         df = df.groupBy("name", "item").agg({"weight": "sum"})
         resultDf = df.groupBy("name").agg(collect_list(struct("item", "sum(weight)")).alias("items"))
