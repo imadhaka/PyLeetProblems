@@ -55,13 +55,13 @@ class SumItem:
     # Appraoch 1 to get the output
     def sumWeight(self, df):
         df = df.groupBy("name", "item").sum("weight")
-        grouped_df = df.groupBy("name").agg(collect_list(struct("item", "sum(weight)")).alias("items"))
-        return grouped_df
+        resultDf = df.groupBy("name").agg(collect_list(struct("item", "sum(weight)")).alias("items"))
+        return resultDf
 
     def sumWeight2(self, df):
         df = df.groupBy("name", "item").agg({"weight": "sum"})
-        grouped_df = df.groupBy("name").agg(collect_list(struct("item", "sum(weight)")).alias("items"))
-        return grouped_df
+        resultDf = df.groupBy("name").agg(collect_list(struct("item", "sum(weight)")).alias("items"))
+        return resultDf
 
 # crate class object
 ob = SumItem()
