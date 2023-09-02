@@ -78,7 +78,9 @@ class HumanTraffic:
         # Define a window specification ordered by timestamp
         window_spec = Window.orderBy("id")
 
-        inputDf = inputDf.withColumn('prev1', lag('id').over(window_spec))\
+        # Filter people >= 100
+        inputDf = inputDf.filter(col('people') >= 100)\
+                        .withColumn('prev1', lag('id').over(window_spec))\
                         .withColumn('prev2', lag('id',2).over(window_spec))\
                         .withColumn('next1', lead('id').over(window_spec)) \
                         .withColumn('next2', lead('id',2).over(window_spec))
@@ -89,7 +91,6 @@ class HumanTraffic:
                     | ((col('next2') - col('id') == 2) & (col('next1') - col('id') == 1)))
 
         inputDf = inputDf.select('id', 'visit_date', 'people')\
-                        .filter(col('people') >= 100)\
                         .filter(condition)
 
         return inputDf
