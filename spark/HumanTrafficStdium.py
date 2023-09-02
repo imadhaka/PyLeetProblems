@@ -50,7 +50,7 @@ The rows with ids 2 and 3 are not included because we need at least three consec
 import os
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lag, lead, when
+from pyspark.sql.functions import col, lag, lead, row_number
 from pyspark.sql.window import Window
 from datetime import date
 
@@ -74,6 +74,7 @@ class HumanTraffic:
         columns = ["id", "visit_date", "people"]
         return spark.createDataFrame(data, columns)
 
+    # Approach 1
     def getConsecutiveRows(self, inputDf):
         # Define a window specification ordered by timestamp
         window_spec = Window.orderBy("id")
@@ -92,11 +93,36 @@ class HumanTraffic:
 
         inputDf = inputDf.select('id', 'visit_date', 'people')\
                         .filter(condition)
-
         return inputDf
 
+    # Approach 2
+    def getResult(self, inputDf):
+        # Define a window specification ordered by timestamp
+        window_spec = Window.orderBy("id")
+
+        # filter df with peole >= 100
+        inputDf = inputDf.filter(col('people') >= 100)\
+                        .withColumn('rnum',row_number().over(window_spec))\
+                        .withColumn('diff',col('id') - col('rnum'))
+
+        # Grouping the data based on diff & join result with input
+        groupedDf = inputDf.groupBy(col('diff')).count()
+        inputDf = inputDf.join(groupedDf, on='diff', how='inner')
+
+        # filter the df where diff count >= 3
+        inputDf = inputDf.filter(col('count') >= 3)\
+                        .drop('diff')\
+                        .drop('rnum')\
+                        .drop('count')
+        return inputDf.orderBy('id')
 
 obj = HumanTraffic()
 dataDf = obj.getData()
+
+# Executing Approach 1
 consRowsDf = obj.getConsecutiveRows(dataDf)
 consRowsDf.show()
+
+# Executing Approach 2
+resultDf = obj.getResult(dataDf)
+resultDf.show()
