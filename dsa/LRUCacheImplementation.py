@@ -1,11 +1,4 @@
 #LRU Cache Implementation
-'''
-1. Create a Map<Integer, string>
-2. Create a list for order
-
-3. put  -- if size is full, remove the last & add key to list at first
-        -- if size is not full, add key to list at first
-'''
 from collections import OrderedDict
 
 class LRUCacheImpl:
