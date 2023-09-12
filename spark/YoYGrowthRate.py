@@ -54,7 +54,7 @@ INSERT INTO user.transaction(transaction_id, product_id, spend, transaction_date
 import os, sys
 from datetime import datetime
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import year, col, lag
+from pyspark.sql.functions import year, col, lag, round
 from pyspark.sql.window import Window
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
@@ -88,7 +88,7 @@ class YoyGrowthRate:
                                   lag('spend', 1).over(Window.partitionBy('product_id').orderBy('transaction_date')).alias('prev_year_spend')
                                   ).orderBy('product_id','year')
 
-        return spendDf.withColumn('yoy_rate', (col('curr_year_spend')-col('prev_year_spend'))*100/col('prev_year_spend'))
+        return spendDf.withColumn('yoy_rate', round((col('curr_year_spend')-col('prev_year_spend'))*100/col('prev_year_spend'),2))
 
 
 rate = YoyGrowthRate()
