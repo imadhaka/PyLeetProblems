@@ -100,7 +100,9 @@ class MaxMarks:
     def maxMarks_window(self, inputDf):
         resultDf = inputDf.withColumn('rnk', ntile(5).over(Window.orderBy(col('ID'))))\
                         .withColumn('res', concat_ws(' ', col('ID'), col('Name')))
-        resultDf = resultDf.groupBy(col('rnk')).agg(collect_list(concat_ws(' , ', col('res'))).alias('RESULT')).drop(col('rnk'))
+        resultDf = resultDf.groupBy(col('rnk'))\
+                            .agg(collect_list(concat_ws(' , ', col('res'))).alias('RESULT'))\
+                            .drop(col('rnk'))
         return resultDf
 
 
