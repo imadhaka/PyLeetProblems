@@ -99,23 +99,23 @@ class MaxMarks:
     # PySpark
     def maxMarks_window(self, inputDf):
         resultDf = inputDf.withColumn('rnk', ntile(5).over(Window.orderBy(col('ID'))))\
-                        .withColumn(concat_ws(' ', col('ID'), col('Name')).alias('res'))
-        resultDf = resultDf.agg(collect_list(concat_ws(' , ', col('res'))))
+                        .withColumn('res', concat_ws(' ', col('ID'), col('Name')))
+        resultDf = resultDf.groupBy(col('rnk')).agg(collect_list(concat_ws(' , ', col('res'))).alias('RESULT')).drop(col('rnk'))
         return resultDf
 
 
 ob = MaxMarks()
 inputDf = ob.createData()
-#inputDf.show()
+inputDf.show()
 
-#resultDf = ob.getMaxMarks(inputDf)
-#resultDf.show(10, False)
+resultDf = ob.getMaxMarks(inputDf)
+resultDf.show(10, False)
 
-#resultDf = ob.maxMarks(inputDf)
-#resultDf.show(10, False)
+resultDf = ob.maxMarks(inputDf)
+resultDf.show(10, False)
 
-#resultDf = ob.getMaxMarks_window(inputDf)
-#resultDf.show(10, False)
+resultDf = ob.getMaxMarks_window(inputDf)
+resultDf.show(10, False)
 
 resultDf = ob.maxMarks_window(inputDf)
 resultDf.show(10, False)
