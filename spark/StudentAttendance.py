@@ -44,6 +44,8 @@ StudentID,  MissingFrom,  NumberOfMissedDays
 import os, sys
 from pyspark.sql import SparkSession
 from datetime import date
+from pyspark.sql.functions import col, row_number, min, count
+from pyspark.sql.window import Window
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
@@ -84,6 +86,7 @@ class Attendance:
         return spark.createDataFrame(data, columns)
 
 
+    # SQL Approach
     def getAttendance(self, studentDf):
         studentDf.createOrReplaceTempView('Attendance')
 
@@ -104,8 +107,30 @@ class Attendance:
                 "group by M1.StudentID, numDays"
         return spark.sql(query)
 
+    def getAttendance_py(self, studentDf):
+        groupedDf = studentDf.withColumn('rnk', row_number().over(Window.partitionBy(col('StudentID')).orderBy(col('ClassDate'))))\
+                            .withColumn('rnkId', row_number().over(Window.partitionBy(col('StudentID'),col('IsPresent')).orderBy(col('ClassDate'))))
+
+        groupedDf = groupedDf.withColumn('numDays', col('rnk') - col('rnkId'))\
+                            .select(col('StudentID'),
+                                    col('ClassDate'),
+                                    col('IsPresent'),
+                                    col('numDays'))
+
+        resultDf = groupedDf.filter(col('IsPresent').__eq__('0'))\
+                            .groupBy(col('StudentID'), col('numDays'))\
+                            .agg(min(col('ClassDate')).alias('MissingFrom'),
+                                 count(col('numDays')).alias('NumberOfMissedDays'))\
+                            .drop(col('numDays'))
+
+        return resultDf
+
+
 ob = Attendance()
 studentDf = ob.createAttendanceData()
 
 resultDf = ob.getAttendance(studentDf)
+resultDf.show(50, False)
+
+resultDf = ob.getAttendance_py(studentDf)
 resultDf.show(50, False)
