@@ -55,6 +55,13 @@ who: 1
 within: 1
 world: 1
 
+
+✅ 𝗘𝘅𝗽𝗹𝗮𝗻𝗮𝘁𝗶𝗼𝗻:
+1. Analyze all the special character involved in input file data.
+2. Use regexp replace to replace these characters with space.
+3. Convert the data into lower case and split on space.
+4. Use explode to convert the result into rows.
+5. Aggregate each word count and filter the blank values
 '''
 
 import os, sys
@@ -72,8 +79,24 @@ class WordCount:
         dataDf = spark.createDataFrame([(line,)], ['text'])
         return dataDf
 
+    def wCount(self, inputDf):
+        inputDf.createOrReplaceTempView('table')
+        query = """with cte as (
+                select regexp_replace(text, "[';.,#*-]", ' ') as text
+                from table),
+                M1 as (select 
+                explode(split(lower(text), ' ')) as words 
+                from cte)
+                select 
+                words, count(1)
+                from M1 
+                where words != '' 
+                group by words 
+                order by words"""
+        return spark.sql(query)
+
     def wordCount(self, inputDf):
-        pattern = "[';.,#*-]"
+        pattern = "[';.,#*-_]"
         replacement = ' '
         regexDf = inputDf.select(regexp_replace(col('text'), pattern, replacement).alias('words'))
         splitDf = regexDf.select(explode(split(lower('words'), ' ')).alias('words'))
@@ -84,5 +107,6 @@ class WordCount:
 
 ob = WordCount()
 inputDf = ob.createData()
-resultDf = ob.wordCount(inputDf)
+#resultDf = ob.wordCount(inputDf)
+resultDf = ob.wCount(inputDf)
 resultDf.show(100, False)
