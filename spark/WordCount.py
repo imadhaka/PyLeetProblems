@@ -59,7 +59,7 @@ world: 1
 
 import os, sys
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, regexp_replace, split, explode, count
+from pyspark.sql.functions import col, regexp_replace, split, explode, count, lower
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
@@ -76,7 +76,7 @@ class WordCount:
         pattern = "[';.,#*-]"
         replacement = ' '
         regexDf = inputDf.select(regexp_replace(col('text'), pattern, replacement).alias('words'))
-        splitDf = regexDf.select(explode(split('words', ' ')).alias('words'))
+        splitDf = regexDf.select(explode(split(lower('words'), ' ')).alias('words'))
         countDf = splitDf.groupBy('words').agg(count('*').alias('counts'))\
                         .filter(col('words') != '').orderBy('words')
         return countDf
