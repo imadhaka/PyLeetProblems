@@ -50,11 +50,10 @@ class StudentReport:
         continents = inputDf.select("continent").distinct().sort('continent').collect()
 
         query = f"""with cte as ( select name, continent, 
-                row_number() over(partition  by continent order by name) as rnum from student 
-                order by continent) 
+                row_number() over(partition  by continent order by name) as rnum from student ) 
                 select {', '.join([f'{cont.continent}' for cont in continents])}
                 from cte pivot(first(name) for continent in ({', '.join([f"'{cont.continent}'" for cont in continents])})) 
-                order by rnum"""
+                """
         resultDf = spark.sql(query)
         return resultDf
 
