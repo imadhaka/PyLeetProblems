@@ -62,38 +62,42 @@ class UserPurchase:
             (2, date(2019, 7, 1), 'mobile', 100),
             (2, date(2019, 7, 2), 'mobile', 100),
             (3, date(2019, 7, 1), 'desktop', 100),
-            (3, date(2019, 7, 2), 'desktop', 100),
+            (3, date(2019, 7, 2), 'desktop', 100)
         ]
         schema = ['user_id', 'spend_date', 'platform', 'amount']
         return spark.createDataFrame(data, schema)
 
     def totalUsers(self, inputDf):
         inputDf.createOrReplaceTempView('table')
-        query = """with plat as (
-                    select user_id, spend_date, 
-                    concat_ws(' , ', collect_list(platform)) as platform
-                    from table group by user_id, spend_date)  
+
+        query = """with cte as (
+                    select user_id, spend_date,
+                    count(distinct platform) as platformCount
+                    from table group by user_id, spend_date),
+                    
+                    cte2 as (
                     select M1.spend_date,
-                    case when M2.platform='mobile' 
-                            then 'mobile' 
-                        when M2.platform='desktop' 
-                            then 'desktop' 
-                        else 'both' 
-                    end as platform,
-                    sum(M1.amount) as total_amount,
-                    count(M1.user_id) as total_users 
-                    from table M1 join plat M2 
+                    if(M2.platformCount > 1, 'both', M1.platform) as platform,
+                    M1.amount, M1.user_id 
+                    from table M1 join cte M2
                     on M1.user_id = M2.user_id 
-                    and M1.spend_date = M2.spend_date 
-                    group by M1.spend_date, M2.platform"""
+                    and M1.spend_date = M2.spend_date) 
+                    
+                    select spend_date, platform,
+                    sum(amount) as total_amount,
+                    count(distinct user_id) as total_users
+                    from cte2 group by spend_date, platform
+                    order by spend_date, total_users"""
 
         return spark.sql(query)
 
     def totalUserAmount(self, inputDf):
-        groupDf = inputDf.groupBy('user_id', 'spend_date').agg(concat_ws(',', collect_list('platform')).alias('platform'))
-        groupDf = groupDf.alias('M2').join(inputDf.alias('M1'), (groupDf['user_id']==inputDf['user_id']) & (groupDf['spend_date']==inputDf['spend_date']), 'inner') \
-                        .groupBy('M1.spend_date', 'M2.platform').agg(sum('M1.amount').alias('total_amount'), count('M1.user_id').alias('total_users'))
-        return groupDf
+        groupDf = inputDf.groupBy('user_id', 'spend_date').agg(count_distinct('platform').alias('platformCount'))
+
+        return groupDf.alias('M2').join(inputDf.alias('M1'), (groupDf['user_id']==inputDf['user_id']) & (groupDf['spend_date']==inputDf['spend_date']), 'inner')\
+            .withColumn('platform', when(col('M2.platformCount').__gt__(1), lit('both')).otherwise(col('M1.platform')))\
+            .groupBy('M1.spend_date', 'platform').agg(sum('M1.amount').alias('total_amount'), count_distinct('M1.user_id').alias('total_users'))\
+                        .orderBy('M1.spend_date', 'total_users')
 
 ob = UserPurchase()
 inputDf = ob.createData()
