@@ -22,6 +22,17 @@ spark = SparkSession.builder.master("local[*]").getOrCreate()
 
 class NullJoin:
     def createData(self):
+        tab_a = [(1,), (1,), (None,), (None,), (None,), (2,)]
+        tab_b = [(1,), (None,), (None,), (3,), (5,)]
+
+        column = ['C1']
+
+        df_a = spark.createDataFrame(tab_a, column)
+        df_b = spark.createDataFrame(tab_b, column)
+
+        return df_a, df_b
+
+    def getData(self):
         df_a = spark.read.option('header', True).csv("C:/Users/thean/PycharmProjects/PyLeetProblems/data/DataFile.csv")
         df_b = spark.read.option('header', True).csv('C:/Users/thean/PycharmProjects/PyLeetProblems/data/DataFile2.csv')
 
@@ -53,6 +64,7 @@ class NullJoin:
 
 # Main Process starts
 obj = NullJoin()
+#leftDf, rightdf = obj.getData()
 leftDf, rightdf = obj.createData()
 
 obj.leftJoin(leftDf, rightdf)
