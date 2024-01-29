@@ -1,11 +1,11 @@
 delivery_no,runs_scored,delivery_type
-1,1,legal
+1,1,nb
 2,0,legal
 3,1,legal
 4,0,nb
 5,2,legal
 6,1,legal
-7,0,wd
+7,0,legal
 8,1,legal
 9,0,legal
 10,W,legal
