@@ -18,7 +18,7 @@ Few things to remember
 
 import os, sys
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, row_number, ceil, min, max, lit, sum
+from pyspark.sql.functions import col, row_number, ceil, min, max, lit, sum, lag, least
 from pyspark.sql.window import Window
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
@@ -38,23 +38,30 @@ class CricketScorecard:
                 where delivery_type = 'legal'),
                 
                 overDelivery as (
-                select over,
-                min(delivery_no) as first_ball,
-                max(delivery_no) as last_ball
-                from legal group by over
+                select
+                over,
+                first_ball,
+                last_ball,
+                lag(last_ball) over(order by over) + 1 as prev_over_last_del
+                from (
+                    select over,
+                    min(delivery_no) as first_ball,
+                    max(delivery_no) as last_ball
+                    from legal group by over
+                    ) M1
                 ),
                 
                 notLegal as (
                 select o.over,
                 int(t.runs_scored) + 1 as runs_scored
                 from table t join overDelivery o
-                on t.delivery_no BETWEEN o.first_ball AND o.last_ball
+                on t.delivery_no BETWEEN least(o.first_ball, o.prev_over_last_del) AND o.last_ball
                 where t.delivery_type != 'legal'
                 ) 
                 
                 select over, sum(runs_scored) as runs_scored
                 from (select over, runs_scored from legal union all select over, runs_scored from notLegal) M1
-                group by over
+                group by over order by over
                 """
         return spark.sql(query)
 
@@ -65,13 +72,16 @@ class CricketScorecard:
 
         # Find the first and last ball of each over
         deliveryDf = oversDf.groupBy('over').agg(min('delivery_no').alias('first_ball'), max('delivery_no').alias('last_ball'))
+        deliveryDf = deliveryDf.withColumn('prev_over_last_del', lag('last_ball').over(Window.orderBy('over')) + 1)
+
         # Calculate overs for extra deliveries
         extrasDf = cricket_data.filter("delivery_type != 'legal'").alias('A')\
-                                .join(deliveryDf.alias('B'), col('A.delivery_no').between(col('B.first_ball'), col('B.last_ball')))\
+                                .join(deliveryDf.alias('B'), col('A.delivery_no').between(least(col('B.first_ball'), col('prev_over_last_del')), col('B.last_ball')))\
                                 .select('B.over', (col("A.runs_scored").cast("int") + 1).alias("runs_scored"))
 
         resultDf = oversDf.select('over', 'runs_scored').unionAll(extrasDf)\
-                        .groupBy('over').agg(sum('runs_scored').alias('runs_scored'))
+                        .groupBy('over').agg(sum('runs_scored').alias('runs_scored'))\
+                        .orderBy('over')
 
         return resultDf
 
