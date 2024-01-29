@@ -108,15 +108,18 @@ class Attendance:
         return spark.sql(query)
 
     def getAttendance_py(self, studentDf):
+        # partition the data based on StudentId & StudentId, IsPresent
         groupedDf = studentDf.withColumn('rnk', row_number().over(Window.partitionBy(col('StudentID')).orderBy(col('ClassDate'))))\
                             .withColumn('rnkId', row_number().over(Window.partitionBy(col('StudentID'),col('IsPresent')).orderBy(col('ClassDate'))))
 
+        # calculate the numDays based on consecutive IsPresent values
         groupedDf = groupedDf.withColumn('numDays', col('rnk') - col('rnkId'))\
                             .select(col('StudentID'),
                                     col('ClassDate'),
                                     col('IsPresent'),
                                     col('numDays'))
 
+        # Calculate the MissingFrom and NumberOfMissedDays
         resultDf = groupedDf.filter(col('IsPresent').__eq__('0'))\
                             .groupBy(col('StudentID'), col('numDays'))\
                             .agg(min(col('ClassDate')).alias('MissingFrom'),
