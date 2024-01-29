@@ -18,7 +18,7 @@ Few things to remember
 
 import os, sys
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, row_number, ceil, min, max, lit, sum, lag, least, coalesce
+from pyspark.sql.functions import col, row_number, ceil, min, max, lit, sum, lag, least
 from pyspark.sql.window import Window
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
@@ -42,7 +42,7 @@ class CricketScorecard:
                 over,
                 first_ball,
                 last_ball,
-                coalesce(lag(last_ball) over(order by over), 0) + 1 as prev_over_last_del
+                lag(last_ball, 1, 0) over(order by over) + 1 as prev_over_last_del
                 from (
                     select over,
                     min(delivery_no) as first_ball,
@@ -72,7 +72,7 @@ class CricketScorecard:
 
         # Find the first and last ball of each over
         deliveryDf = oversDf.groupBy('over').agg(min('delivery_no').alias('first_ball'), max('delivery_no').alias('last_ball'))
-        deliveryDf = deliveryDf.withColumn('prev_over_last_del', coalesce(lag('last_ball').over(Window.orderBy('over')), lit(0)) + 1)
+        deliveryDf = deliveryDf.withColumn('prev_over_last_del', lag('last_ball', 1, 0).over(Window.orderBy('over')) + 1)
 
         # Calculate overs for extra deliveries
         extrasDf = cricket_data.filter("delivery_type != 'legal'").alias('A')\

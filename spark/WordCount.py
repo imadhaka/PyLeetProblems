@@ -107,6 +107,8 @@ class WordCount:
 
 ob = WordCount()
 inputDf = ob.createData()
-#resultDf = ob.wordCount(inputDf)
+resultDf = ob.wordCount(inputDf)
+resultDf.show(100, False)
+
 resultDf = ob.wCount(inputDf)
 resultDf.show(100, False)
