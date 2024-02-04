@@ -2,7 +2,7 @@ delivery_no,runs_scored,delivery_type
 1,1,nb
 2,0,legal
 3,1,legal
-4,0,nb
+4,W,nb
 5,2,legal
 6,1,legal
 7,0,legal
@@ -28,4 +28,4 @@ delivery_no,runs_scored,delivery_type
 27,4,legal
 28,0,legal
 29,2,legal
-30,2,legal
+30,W,nb
