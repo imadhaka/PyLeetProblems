@@ -94,7 +94,7 @@ class SkuPriceDetail:
                                                         .otherwise(date_format('price_date', 'yyyy-MM-01')))
         dateDf = inputDf.filter(dayofmonth('price_date').__eq__(1) & col('rnum').__eq__(1))\
                     .withColumn('price_date', date_format(add_months('price_date', 1), 'yyyy-MM-01'))\
-                    .withColumn('price_month', date_format(add_months('price_date', 1), 'yyyy-MM-01'))\
+                    .withColumn('price_month', col('price_date'))\
                 .unionAll(dateDf)
         priceDf = dateDf.groupBy(col('sku_id'), col('price_month').alias('price_date')).agg(last('price').alias('price'))
         return priceDf.withColumn('price_diff', col('price')-lag('price').over(Window.partitionBy('sku_id').orderBy('price_date'))).orderBy('sku_id', 'price_date')
