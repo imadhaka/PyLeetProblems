@@ -38,6 +38,7 @@ class AmazonInventory:
         schema = ['Product', 'Store', 'Price']
         return spark.createDataFrame(data, schema)
 
+    #SQL approach
     def priceCheck(self, inputDf):
         inputDf.createOrReplaceTempView('input')
         query = """with pivot as (
@@ -58,9 +59,21 @@ class AmazonInventory:
                 """
         return spark.sql(query)
 
+    #PySpark approach
+    def amazonPriceCheck(self, inputDf):
+        minPricedf = inputDf.groupBy('Product').agg(min('Price').alias('Min_Price'))
+        pivotDf = inputDf.groupBy('Product').pivot('Store').max('Price')
+        resultDf = pivotDf.join(minPricedf, on='Product', how='inner')\
+                        .withColumn('Competitive_price', when(col('Amazon').__eq__(col('Min_Price')), lit('Y')).otherwise(lit('N')))\
+                        .select('Product', col('BestBuy').alias('BestBuy_Price'), col('Walmart').alias('Walmart_Price'), col('Amazon').alias('Amazon_Price'), 'Competitive_price')\
+                        .orderBy('Product')
+        return resultDf
+
 ob = AmazonInventory()
 inputDf = ob.createData()
-inputDf.show()
 
 resultDf = ob.priceCheck(inputDf)
+resultDf.show()
+
+resultDf = ob.amazonPriceCheck(inputDf)
 resultDf.show()
