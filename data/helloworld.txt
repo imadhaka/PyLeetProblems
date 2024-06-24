@@ -1,0 +1,3 @@
+Hello! This is a spark program to count the number of occurance of Hello World word, Hello World.
+This will be case sensitive, meaning hello world or Hello world or hello World will not be included in the count.
+Also, Hello and World should be counted when they are placed together like Hello World.
