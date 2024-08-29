@@ -18,7 +18,7 @@ A, B, C and D are integers within the range [0..9]
 """
 
 from itertools import permutations
-class DigitalClockDigits:
+class ValidateTime:
     def solution(self, A, B, C, D):
         # Check if all input digits are within the valid range [0, 9]
         if not all(0 <= digit <= 9 for digit in [A, B, C, D]):
@@ -36,7 +36,7 @@ class DigitalClockDigits:
 
         return len(valid_times)
 
-obj = DigitalClockDigits()
+obj = ValidateTime()
 print(obj.solution(1, 8, 3, 2))
 print(obj.solution(2, 3, 3, 2))
 print(obj.solution(6, 2, 4, 7))
