@@ -11,9 +11,8 @@ write query that returns the number of passenger boarding for each bus.
 
 import os, sys
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+from pyspark.sql.functions import *
 from pyspark.sql import Window
-from pyspark.sql.types import DateType
 
 os.environ['PYSPARK_PYTHON'] = sys.executable
 os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
@@ -65,9 +64,43 @@ class BusPassanger:
         '''
         return spark.sql(query)
 
+    def passList(self, busDf, passDf):
+        # Define the window specification for row_number
+        windowSpec = Window.partitionBy("p.id").orderBy("b.time")
+
+        # Step 1: Join buses and passengers on origin, destination, and time conditions
+        joined_df = busDf.alias("b").join(
+            passDf.alias("p"),
+            (col("b.origin") == col("p.origin")) &
+            (col("b.destination") == col("p.destination")) &
+            (col("b.time") >= col("p.time"))
+        ).select(
+            col("b.id").alias("b_id"),
+            col("p.id").alias("p_id"),
+            col("p.time").alias("p_time"),
+            row_number().over(windowSpec).alias("rn"))
+
+
+        # Step 3: Filter to get only the first bus (earliest) for each passenger
+        filtered_cte = joined_df.filter(col("rn") == 1)
+
+        # Step 4: Left join with the original buses DataFrame and count passengers
+        result_df = busDf.alias("b").join(
+            filtered_cte.alias("cte"),
+            col("b.id") == col("cte.b_id"),
+            how="left"
+        ).groupBy("b.id").agg(
+            count("cte.p_id").alias("num_passenger")
+        ).orderBy("b.id")
+
+        return result_df
+
 ob = BusPassanger()
 busDf = ob.createBusesData()
 passDf = ob.createPassangerData()
 
 resultDf = ob.numPassanger(busDf, passDf)
+resultDf.show()
+
+resultDf = ob.passList(busDf, passDf)
 resultDf.show()
