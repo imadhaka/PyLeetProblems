@@ -32,17 +32,33 @@ Note: Last two periods are contained by (6,9)
 """
 
 def particleVelocity(particles):
+    # Initialize the count of stable periods
     numStable = 0
+
+    # We need at least 3 elements to form a stable velocity
     if len(particles) < 3:
-       return 0
-    for i in range(len(particles) - 2):
-        for j in range(i + 1, len(particles) - 1):
-            if particles[j + 1] - particles[j] == particles[i + 1] - particles[i]:
-                numStable += 1
-            else :
-                break
+        return 0
+
+    # To track the length of the current stable period
+    stableLength = 0
+
+    # Traverse through the array from the second element
+    for i in range(1, len(particles) - 1):
+        # Check if the difference between consecutive elements is the same
+        if particles[i] - particles[i - 1] == particles[i + 1] - particles[i]:
+            # Extend the stable period by increasing the stable length
+            stableLength += 1
+            # Add the number of stable subarrays that can be formed
+            numStable += stableLength
+        else:
+            # Reset stable length if the sequence is not stable
+            stableLength = 0
+
+    # If the count exceeds 1 billion, return -1
     return numStable if numStable < 1000000000 else -1
 
+input= [-1, 1, 3, 3, 3, 2, 3, 2, 1, 1]
 if __name__ == '__main__':
-    elevs = [int(x) for x in input().split()]
+    #elevs = [int(x) for x in input().split()]
+    elevs = input
     print(particleVelocity(elevs))
